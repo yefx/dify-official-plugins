@@ -1,3 +1,4 @@
+import os
 import json
 from typing import Any, Optional, cast
 
@@ -75,9 +76,17 @@ class FeishuRequest:
             "Content-Type": "application/json",
             "user-agent": "Dify",
         }
+        # 添加代理支持
+        proxies = {
+            "http://": os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy"),
+            "https://": os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy"),
+        }
+        # 如果没有设置代理，则proxies为None
+        if not proxies["http://"] and not proxies["https://"]:
+            proxies = None
         if require_token:
             headers["tenant-access-token"] = f"{self.tenant_access_token}"
-        res = httpx.request(method=method, url=url, headers=headers, json=payload, params=params, timeout=30).json()
+        res = httpx.request(method=method, url=url, headers=headers, json=payload, params=params, timeout=30, proxies=proxies).json()
         if res.get("code") != 0:
             raise Exception(res)
         return res
